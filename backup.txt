@@ -1,0 +1,73 @@
+
+    if (fp == NULL)
+    {
+        printf("Error: could not open file %s", filename);
+        return 1;
+    }
+
+    // read one character at a time and
+    // display it to the output
+    char ch;
+    int i = 0;
+    int j = 0;
+    while ((ch = fgetc(fp)) != EOF)
+    //while(fgets (line,MAX_LINE_LENGTH, fp))
+    {
+      /*
+      printf("line[%6d]: %s", ++line_count, line);
+      if (line[strlen(line) -1] != '\n')
+      {
+        printf("\n");
+      }
+      else
+        printf("\n ---not end of line---\n");
+      printf("Line[%6d] :%c \n",i, ch);
+      if((i%5) == 0){
+        printf("\n");
+        printf("The value of i is %d -", i);
+        printf(": %c :", ch);
+         //processList[j].processID = ch;
+      }       
+      else if ((i%5) == 2){
+        //processList[j].burstTime = atoi(ch);
+        printf("The value of i is %d -", i);
+        printf(": %c :", ch);
+      }
+      else if ((i%5) == 4)
+      {
+        //processList[j].arrivalTime = atoi(ch);
+        printf("The value of i is %d -", i);
+        printf(": %c :", ch);
+        printf("-----The value of j is %d \n", j);
+        j++;
+      }
+      */
+      i++;
+    }
+    // close the file
+    fclose(fp);
+
+
+====================
+
+
+  while(lineSize >= 0){
+    count = 0;
+    while(token != NULL){
+    printf("Token no. %d : %s \n", count,token); 
+    token = strtok(NULL,deLim);
+    if(count == 0){
+      //processList[lineCount].processID = token;
+    }
+    else if (count == 1){
+      //processList[lineCount].burstTime = atoi(token);
+    }
+    else if (count == 2){
+      //processList[lineCount].arrivalTime = atoi(token);
+    }
+    else{
+      printf("Error Reading file");
+      return 1;
+    }
+    count++;
+  }
