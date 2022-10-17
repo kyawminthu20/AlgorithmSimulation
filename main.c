@@ -127,9 +127,86 @@ void displayProcessListSnapshot()
   }
 }
 
+void SRTF_Simulation(int maxTime){
+  printf("\n\n");
+  printf("SRTF Scheduling\n");
+  printf("Time  |  ProcessID | Status \n");
+  printf("----------------------------\n");
+  bool contextSwitch = true;
+  for(int k=0; k <= maxTime; k++)
+  {
+    //================printf("Time %d\n", k);
+    //================printf("=========\n");
+
+    //Reduce Running time from Running process
+    for(int j = 0; j < 8; j++)
+    {
+      if (processList[j].processState == Running){
+        processList[j].remainingTime = processList[j].remainingTime -1;
+      }
+    }
+    // Check if the processes are in the ready state
+    for(int j = 0; j < 8; j++)
+    {
+      if (processList[j].arrivalTime == k){
+        processList[j].processState = Ready;
+        //====================printf("Process %s is ready at time %d .\n", processList[j].processID, k);
+        contextSwitch = true;
+      }
+    }
+
+    // Check if processs are completed
+    for(int j = 0; j < 8; j++)
+    {
+      if (processList[j].remainingTime == 0 && processList[j].processState == Running){
+        processList[j].processState = Terminated;
+        //=======================printf("Process %s is Terminated at time %d .\n", processList[j].processID, k);
+        printf("%5d | %10s | %s \n", (k), processList[j].processID, getStateName(processList[j].processState));
+        contextSwitch = true;
+      }
+    }
+    // Check the shortest process Burst time
+    int tempRemainingTime = 1000;
+    char *shortestRemainingTimeProcessAtTime;
+    shortestRemainingTimeProcessAtTime = (char*) malloc(sizeof(char)*(2+1));
+    for(int l=7; l >= 0; --l)
+    {
+      
+      if(processList[l].processState == Ready || processList[l].processState == Running || processList[l].processState == Waiting)
+      {
+        if (processList[l].remainingTime <= tempRemainingTime){
+          tempRemainingTime = processList[l].remainingTime;
+          strcpy(shortestRemainingTimeProcessAtTime,"");
+          strcpy(shortestRemainingTimeProcessAtTime, processList[l].processID);        
+        }
+      }
+    }
+  //=============printf("Shortest Remaining Time at time %d is %3s. \n", k, shortestRemainingTimeProcessAtTime);
+    //Check if it is time to Switch
+    //If Running process not equal to the SRTF algorthm chosen process, change the process to waiting state
+    if(contextSwitch == true)
+    {
+      //=================printf("=======Context Switching======\n");
+      //Start Executing shortest Burst Time process.
+      for(int m = 0; m < 8; m++){
+        if(strcmp(shortestRemainingTimeProcessAtTime, processList[m].processID) == 0)
+        {
+          processList[m].processState = Running;
+          contextSwitch = false;
+        }
+        else if( (strcmp(shortestRemainingTimeProcessAtTime, processList[m].processID) != 0) && (processList[m].processState == Running) )
+        {
+          processList[m].processState = Waiting;
+        }
+      }
+    }
+    //============displayProcessListSnapshot();
+  }
+  
+}
+
 void SJF_Simulation(int maxTime)
 {
-  char *readyQueue = (char*) malloc(sizeof(char)*(8+1));
   printf("\n\n");
   printf("SJF Scheduling\n");
   printf("Time  |  ProcessID | Status \n");
@@ -166,14 +243,12 @@ void SJF_Simulation(int maxTime)
         contextSwitch = true;
       }
     }
-    // Check the shortest process Burst time
+    // Check the shortest process Remaining time
     int tempBurstTime = 1000;
     char *shortestBurstTimeProcessAtTime;
     shortestBurstTimeProcessAtTime = (char*) malloc(sizeof(char)*(2+1));
     for(int l=7; l >= 0; --l)
     {
-      //printf(">> %d Process is %s \n", l, processList[l].processID);
-      
       if(processList[l].processState == Ready)
       {
         if (processList[l].burstTime <= tempBurstTime ){
@@ -229,6 +304,7 @@ int main(int argc, const char * argv[]) {
   SJF_Simulation(maxRunTime);
 
   // SRTF Scheduling
+  readProcessInformation();
   SRTF_Simulation(maxRunTime);
   return 0;
 }
