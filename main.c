@@ -42,6 +42,8 @@ typedef struct  {
   State processState;
   int runTime;
   int remainingTime;
+  int turnAroundTime;
+  int waitingTime;
 }ProcessInfo;
 
 ProcessInfo processList[8];
@@ -95,6 +97,7 @@ int readProcessInformation()
       else if (count == 1){
         processList[i].burstTime = atoi(token);
         processList[i].remainingTime = processList[i].burstTime;
+        processList[i].runTime = 0;
       }
       else if (count == 2 ){
         processList[i].arrivalTime = atoi(token);
@@ -127,6 +130,145 @@ void displayProcessListSnapshot()
   }
 }
 
+void RR_Simulation(int maxTime){
+  printf("\n\n");
+  printf("RR Scheduling\n");
+  printf("Time  |  ProcessID | Status \n");
+  printf("----------------------------\n");
+  int quantumTime = 3;
+  bool contextSwitch = true;
+  int quantumCounter = 0;
+  bool occupiedCPU = false;
+  int currentRunningProcess = 100;
+  bool quantumSwitch = false;
+  bool chooseNext = false;
+
+  for(int k = 0; k <= maxTime; k++)
+  {
+    //printf("Time %d and Quantum Counter is %d \n", k, quantumCounter);
+    //printf("=========\n");
+    quantumSwitch = false;
+    for(int o = 0; o < 8; o++)
+    {
+      if(processList[o].processState == Running)
+      {
+        currentRunningProcess = o;
+        processList[o].runTime++;
+        processList[o].remainingTime--;
+        quantumCounter++;
+        occupiedCPU = true;
+        if(quantumCounter == quantumTime )
+        {
+          if(processList[o].remainingTime == 0)
+          {
+            processList[o].processState = Terminated;
+            printf("%5d | %10s | %s \n", (k), processList[o].processID, getStateName(processList[o].processState));
+          }
+          else
+            processList[o].processState = Ready;
+          contextSwitch = true;
+          quantumSwitch = true;
+          chooseNext = true;
+          //printf("Quantum is %d and choosing next ready process\n", quantumCounter);
+        }
+      }   
+    }
+    //printf("CPU is occupied by process: %s \n and quantum counter is %d\n", processList[currentRunningProcess].processID, quantumCounter);
+
+    bool newProcessReady = false;
+    
+    // Check if the processes are in the ready state
+    for(int j = 0; j < 8; j++)
+    {
+      if (processList[j].arrivalTime == k){
+        processList[j].processState = Ready;
+        //printf("Process %s is ready at time %d .\n", processList[j].processID, k);
+        newProcessReady = true;
+      }
+      else
+        newProcessReady = false;
+    }
+    if(k == 0)
+    {
+      contextSwitch = true;
+      //printf("Switching due to CPU not occupied and new process is ready");
+    }
+      
+
+
+    // Check if processs are completed
+    for(int j = 0; j < 8; j++)
+    {
+      if (processList[j].remainingTime == 0 && processList[j].processState == Running){
+        processList[j].processState = Terminated;
+        //printf("Process %s is Terminated at time %d . and choosing next Ready Process.\n", processList[j].processID, k);
+        occupiedCPU = false;
+        printf("%5d | %10s | %s \n", (k), processList[j].processID, getStateName(processList[j].processState));
+        contextSwitch = true;
+        chooseNext = true;
+      }
+      
+      
+    }
+
+    
+    if(contextSwitch)
+    {
+      //printf("=======Context Switching======\n");
+      //Start Executing Next process.
+      if(!occupiedCPU && !chooseNext) // if cpu is not occupied choose the first ready process
+      {
+        for(int i = 0; i < 8; i++)
+        {
+          if(processList[i].processState == Ready)
+          {
+            //printf("###################CPU is not occupied, choosing first ready######################\n\n");
+            processList[i].processState = Running;
+            break;
+          }  
+        }
+      }
+      else if(chooseNext)// choose the next one
+      {
+        int runningIndex = currentRunningProcess;
+         for(int n = 0; n < 8; n++)
+         {
+
+          // printf("Current Running Process is %s \n", processList[runningIndex].processID);
+           if(runningIndex == 7)
+           {
+             // check the next index to 0;
+             runningIndex = 0;
+           }
+           else
+           {
+             runningIndex++;
+           }
+
+           //printf("Checking nextProcess %s state %s \n", processList[runningIndex].processID, processList[runningIndex].processState);
+
+           if(processList[runningIndex].processState == Ready)
+           {
+             processList[runningIndex].processState = Running;
+             occupiedCPU = true;
+             quantumCounter = 0;
+             break;
+           }
+         }
+        quantumCounter = 0;
+
+        chooseNext = false;
+      }
+      else
+      {
+       // printf("\nError choosing\n");
+      }
+
+    }
+    //displayProcessListSnapshot();
+  }
+}
+
 void SRTF_Simulation(int maxTime){
   printf("\n\n");
   printf("SRTF Scheduling\n");
@@ -142,6 +284,7 @@ void SRTF_Simulation(int maxTime){
     for(int j = 0; j < 8; j++)
     {
       if (processList[j].processState == Running){
+        processList[j].runTime = processList[j].runTime + 1;
         processList[j].remainingTime = processList[j].remainingTime -1;
       }
     }
@@ -200,9 +343,8 @@ void SRTF_Simulation(int maxTime){
         }
       }
     }
-    //============displayProcessListSnapshot();
+    //=============displayProcessListSnapshot();
   }
-  
 }
 
 void SJF_Simulation(int maxTime)
@@ -221,6 +363,7 @@ void SJF_Simulation(int maxTime)
     for(int j = 0; j < 8; j++)
     {
       if (processList[j].processState == Running){
+        processList[j].runTime = processList[j].runTime + 1;
         processList[j].remainingTime = processList[j].remainingTime -1;
       }
     }
@@ -238,6 +381,7 @@ void SJF_Simulation(int maxTime)
     {
       if (processList[j].remainingTime == 0 && processList[j].processState == Running){
         processList[j].processState = Terminated;
+        processList[j].turnAroundTime = k - processList[j].arrivalTime;
         //=======================printf("Process %s is Terminated at time %d .\n", processList[j].processID, k);
         printf("%5d | %10s | %s \n", (k), processList[j].processID, getStateName(processList[j].processState));
         contextSwitch = true;
@@ -273,8 +417,26 @@ void SJF_Simulation(int maxTime)
         }
       }
     }
+
+    //Accumulating Times
+
+    for(int i = 0; i < 8; i ++)
+    {
+      if (processList[i].processState == Ready)
+        processList[i].waitingTime++;
+    }
+      
+    
     //displayProcessListSnapshot();
   }
+
+  printf("\nProcessID | Turnaround Time | Waiting Time\n");
+
+  for(int i = 0; i < 8; i++)
+    {
+      printf("%9s | %15d | %10d \n", processList[i].processID,
+        processList[i].turnAroundTime, processList[i].waitingTime);
+    }
 }
 
 //#######################################################################
@@ -289,6 +451,8 @@ int main(int argc, const char * argv[]) {
     processList[i].processState = NotReady;
     processList[i].runTime = 0;
     processList[i].remainingTime = 0;
+    processList[i].turnAroundTime = 0;
+    processList[i].waitingTime = 0;
   }
 
   printf("Algorithm Simulation");
@@ -306,5 +470,10 @@ int main(int argc, const char * argv[]) {
   // SRTF Scheduling
   readProcessInformation();
   SRTF_Simulation(maxRunTime);
+
+  // RR Scheduling
+  readProcessInformation();
+  displayProcessListSnapshot();
+  RR_Simulation(maxRunTime);
   return 0;
 }
